@@ -35,7 +35,7 @@ std::vector<uint8_t> XCOMContainerPCK::getBitmap(int index) const
 	auto cursor = pck_data[index].begin();
 
 	vector<uint8_t> bitmap(width * height, 0);
-	size_t bp = *cursor++;
+	size_t bp = *cursor++ * width;
 	bool eof = false;
 
 	while (cursor != pck_data[index].end()) {

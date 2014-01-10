@@ -13,4 +13,4 @@ HEADERS += \
     XCOMContainerPCK.h
 
 QMAKE_CXXFLAGS += -std=c++11
-LIBS += -lboost_system -lboost_filesystem
+LIBS += -lboost_system -lboost_filesystem `libpng-config --ldflags`
