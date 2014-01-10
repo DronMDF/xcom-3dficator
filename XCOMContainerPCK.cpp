@@ -7,7 +7,8 @@
 using namespace std;
 using boost::adaptors::reverse;
 
-XCOMContainerPCK::XCOMContainerPCK(const string &filename, int /*width*/, int /*height*/)
+XCOMContainerPCK::XCOMContainerPCK(const string &filename, int width, int height)
+	: width(width), height(height)
 {
 	vector<uint16_t> pck_tab;
 	ifstream ftab((filename + ".TAB").c_str(), ios::in | ios::binary);
@@ -31,5 +32,28 @@ XCOMContainerPCK::XCOMContainerPCK(const string &filename, int /*width*/, int /*
 
 std::vector<uint8_t> XCOMContainerPCK::getBitmap(int index) const
 {
-	return pck_data[index];
+	auto cursor = pck_data[index].begin();
+
+	vector<uint8_t> bitmap(width * height, 0);
+	size_t bp = *cursor++;
+	bool eof = false;
+
+	while (cursor != pck_data[index].end()) {
+		assert(!eof);
+		if (*cursor == 0xfe) {
+			cursor++;
+			bp += *cursor++;
+			continue;
+		}
+
+		if (*cursor == 0xff) {
+			cursor++;
+			eof = true;
+			continue;
+		}
+
+		bitmap[bp++] = *cursor++;
+	}
+
+	return bitmap;
 }

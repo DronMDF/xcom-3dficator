@@ -36,7 +36,9 @@ int main(int /*argc*/, char **argv)
 		container->getBitmap(lexical_cast<int>(argv[9]))
 	};
 
-	cout << "facing 0 size: " << facings.begin()->size() << endl;
+	for (auto f : facings) {
+		cout << "facing size: " << f.size() << endl;
+	}
 
 	return 0;
 }
