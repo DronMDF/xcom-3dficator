@@ -2,6 +2,7 @@
 #include <iostream>
 #include <array>
 #include <boost/lexical_cast.hpp>
+#include <boost/geometry.hpp>
 #include <png++/png.hpp>
 #include "XCOMContainer.h"
 
@@ -10,6 +11,7 @@
 #include "upp11.h"
 
 using namespace std;
+using namespace boost::geometry;
 using boost::lexical_cast;
 
 // Вызываться будет примерно так:
@@ -60,6 +62,22 @@ void pngsave(const string &filename, const vector<uint8_t> bitmap, int width, in
 	image.write(filename);
 }
 
+typedef model::point<double, 3, cs::cartesian> point3d;
+
+class rotate_transformer_z : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3>
+{
+public :
+	rotate_transformer_z(const double &angle)
+		: ublas_transformer<point3d, point3d, 3, 3>(
+			 cos(angle), sin(angle), 0, 0,
+			-sin(angle), cos(angle), 0, 0,
+			 0,	     0,		 1, 0,
+			 0,          0,          0, 1)
+	{
+	}
+};
+
+
 
 int main(int /*argc*/, char **argv)
 {
@@ -84,6 +102,12 @@ int main(int /*argc*/, char **argv)
 		pngsave(lexical_cast<string>(n++) + ".png", f, 32, 48, palette);
 		cout << "facing size: " << f.size() << endl;
 	}
+
+	point3d one_vector(1, 0, 0);
+	point3d facing2;
+	rotate_transformer_z(-35.264 * math::d2r).apply(one_vector, facing2);
+
+	cout << get<0>(facing2) << " " << get<1>(facing2) << " " << get<2>(facing2) << endl;
 
 	return 0;
 }
