@@ -3,6 +3,7 @@
 #include <array>
 #include <boost/lexical_cast.hpp>
 #include <boost/geometry.hpp>
+#include <boost/format.hpp>
 #include <png++/png.hpp>
 #include "upp11.h"
 #include "XCOMContainer.h"
@@ -10,6 +11,7 @@
 using namespace std;
 using namespace boost::geometry;
 using boost::lexical_cast;
+using boost::format;
 
 // Вызываться будет примерно так:
 // xcom-3dficator -w32 -h48 UNITS/XCOM_0 32 33 34 35 36 37 38 39 > unarmored-male-head-torso.json
@@ -61,20 +63,59 @@ void pngsave(const string &filename, const vector<uint8_t> bitmap, int width, in
 
 typedef model::point<double, 3, cs::cartesian> point3d;
 
-class rotate_transformer_z : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3>
+point3d rotateOverZ(const point3d &point, double angle)
 {
-public :
-	rotate_transformer_z(const double &angle)
-		: ublas_transformer<point3d, point3d, 3, 3>(
-			 cos(angle), sin(angle), 0, 0,
-			-sin(angle), cos(angle), 0, 0,
-			 0,	     0,		 1, 0,
-			 0,          0,          0, 1)
-	{
-	}
-};
+	class rotator : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3> {
+	public :
+		rotator(const double &angle)
+			: ublas_transformer<point3d, point3d, 3, 3>(
+				 cos(angle), sin(angle), 0, 0,
+				-sin(angle), cos(angle), 0, 0,
+				 0,	     0,		 1, 0,
+				 0,          0,          0, 1)
+		{
+		}
+	};
+	point3d result;
+	rotator(angle).apply(point, result);
+	return result;
+}
 
+point3d rotateOverY(const point3d &point, double angle)
+{
+	class rotator : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3> {
+	public :
+		rotator(const double &angle)
+			: ublas_transformer<point3d, point3d, 3, 3>(
+				cos(angle), 0, -sin(angle), 0,
+				0,	    1,		 0, 0,
+				sin(angle), 0,  cos(angle), 0,
+				0,          0,           0, 1)
+		{
+		}
+	};
+	point3d result;
+	rotator(angle).apply(point, result);
+	return result;
+}
 
+point3d rotateOverX(const point3d &point, double angle)
+{
+	class rotator : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3> {
+	public :
+		rotator(const double &angle)
+			: ublas_transformer<point3d, point3d, 3, 3>(
+				1, 0, 0, 0,
+				0, cos(angle), sin(angle), 0,
+				0, -sin(angle), cos(angle), 0,
+				0,          0,           0, 1)
+		{
+		}
+	};
+	point3d result;
+	rotator(angle).apply(point, result);
+	return result;
+}
 
 int main(int /*argc*/, char **argv)
 {
@@ -82,7 +123,7 @@ int main(int /*argc*/, char **argv)
 	UP_RUN();
 
 	const auto container = XCOMContainer::create(argv[1], 32, 48);
-	const auto facings = {
+	const vector<uint8_t> facings[8] = {
 		container->getBitmap(lexical_cast<int>(argv[2])),
 		container->getBitmap(lexical_cast<int>(argv[3])),
 		container->getBitmap(lexical_cast<int>(argv[4])),
@@ -93,18 +134,63 @@ int main(int /*argc*/, char **argv)
 		container->getBitmap(lexical_cast<int>(argv[9]))
 	};
 
-	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
-	int n = 0;
-	for (auto f : facings) {
-		pngsave(lexical_cast<string>(n++) + ".png", f, 32, 48, palette);
-		cout << "facing size: " << f.size() << endl;
+//	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
+//	int n = 0;
+//	for (auto f : facings) {
+//		pngsave(lexical_cast<string>(n++) + ".png", f, 32, 48, palette);
+//		cout << "facing size: " << f.size() << endl;
+//	}
+
+//	const point3d one_vector(1, 0, 0);
+//	const point3d facing_vec = rotateOverZ(one_vector, -35.264 * math::d2r);
+//	const point3d facings_vec[8] = {
+//		rotateOverY(facing_vec, 45 * math::d2r),
+//		facing_vec,
+//		rotateOverY(facing_vec, -45 * math::d2r),
+//		rotateOverY(facing_vec, -90 * math::d2r),
+//		rotateOverY(facing_vec, -135 * math::d2r),
+//		rotateOverY(facing_vec, -180 * math::d2r),
+//		rotateOverY(facing_vec, -225 * math::d2r),
+//		rotateOverY(facing_vec, -270 * math::d2r)
+//	};
+
+	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
+
+	int obj[32][32][64];
+
+	for (int xm = 0; xm < 32; xm++) {
+		for (int zm = 0; zm < 32; zm++) {
+			for (int ym = 0; ym < 64; ym++) {
+				const point3d current(xm - 16 + .5, ym + .5, zm - 16 + .5);
+				obj[xm][zm][ym] = 0x100;
+				//cout << format("point %1%,%2%,%3%") % xm % zm % ym << endl;
+				for (int f = 0; f < 8; f++) {
+					const point3d face = rotateOverY(current, yangle[f] * math::d2r);
+					const point3d dim = rotateOverX(face, 35.264 * math::d2r);
+					const int xp = get<0>(dim) + 16;
+					const int yp = get<1>(dim) * 200/240;	// аспект для VGA
+					//cout << format("facing %1% map to %2%,%3%") % f % xp % yp << endl;
+					if (yp < 0 || yp > 47 || xp < 0 || xp > 32 ||
+						facings[f][(38 - yp) * 32 + xp] == 0)
+					{
+						obj[xm][zm][ym] = 0;
+						break;
+					}
+				}
+			}
+		}
 	}
 
-	point3d one_vector(1, 0, 0);
-	point3d facing2;
-	rotate_transformer_z(-35.264 * math::d2r).apply(one_vector, facing2);
-
-	cout << get<0>(facing2) << " " << get<1>(facing2) << " " << get<2>(facing2) << endl;
+	for (int ym = 0; ym < 64; ym++) {
+		for (int xm = 0; xm < 32; xm++) {
+			cout << "> ";
+			for (int zm = 0; zm < 32; zm++) {
+				cout << (obj[xm][zm][ym] != 0 ? "[]" : "  ");
+			}
+			cout << endl;
+		}
+		cout << endl;
+	}
 
 	return 0;
 }
