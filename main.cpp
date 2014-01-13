@@ -4,11 +4,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/geometry.hpp>
 #include <png++/png.hpp>
-#include "XCOMContainer.h"
-
-// Ждем релиза upp11 3.0 чтобы убрать этот костыль.
-#undef assert
 #include "upp11.h"
+#include "XCOMContainer.h"
 
 using namespace std;
 using namespace boost::geometry;
