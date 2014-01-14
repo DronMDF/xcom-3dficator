@@ -83,20 +83,9 @@ point3d rotateOverZ(const point3d &point, double angle)
 
 point3d rotateOverY(const point3d &point, double angle)
 {
-	class rotator : public strategy::transform::ublas_transformer<point3d, point3d, 3, 3> {
-	public :
-		rotator(const double &angle)
-			: ublas_transformer<point3d, point3d, 3, 3>(
-				cos(angle), 0, -sin(angle), 0,
-				0,	    1,		 0, 0,
-				sin(angle), 0,  cos(angle), 0,
-				0,          0,           0, 1)
-		{
-		}
-	};
-	point3d result;
-	rotator(angle).apply(point, result);
-	return result;
+	return point3d(get<0>(point) * cos(angle) - get<2>(point) * sin(angle),
+		       get<1>(point),
+		       get<0>(point) * sin(angle) + get<2>(point) * cos(angle));
 }
 
 point3d rotateOverX(const point3d &point, double angle)
@@ -120,7 +109,9 @@ point3d rotateOverX(const point3d &point, double angle)
 int main(int /*argc*/, char **argv)
 {
 	// TODO: Нужно сделать нулевой verbosity level
-	UP_RUN();
+	if (!UP_RUN()) {
+		return -1;
+	}
 
 	const auto container = XCOMContainer::create(argv[1], 32, 48);
 	const vector<uint8_t> facings[8] = {
@@ -195,3 +186,22 @@ int main(int /*argc*/, char **argv)
 	return 0;
 }
 
+
+void CUSTOM_ASSERT_POINT_EQUAL(const point3d &a, const point3d &b)
+{
+	UP_ASSERT(fabs(get<0>(a) - get<0>(b)) < 1e-6);
+	UP_ASSERT(fabs(get<1>(a) - get<1>(b)) < 1e-6);
+	UP_ASSERT(fabs(get<2>(a) - get<2>(b)) < 1e-6);
+}
+
+UP_TEST(rotationOverYShouldCorrect)
+{
+	point3d given(1, 0, 0);
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 45 * math::d2r), point3d(.707107, 0, .707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 90 * math::d2r), point3d(0, 0, 1));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 135 * math::d2r), point3d(-.707107, 0, .707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 180 * math::d2r), point3d(-1, 0, 0));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 225 * math::d2r), point3d(-.707107, 0, -.707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, -90 * math::d2r), point3d(0, 0, -1));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, -45 * math::d2r), point3d(.707107, 0, -.707107));
+}
