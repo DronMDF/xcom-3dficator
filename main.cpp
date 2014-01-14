@@ -2,14 +2,12 @@
 #include <iostream>
 #include <array>
 #include <boost/lexical_cast.hpp>
-#include <boost/geometry.hpp>
 #include <boost/format.hpp>
 #include <png++/png.hpp>
 #include "upp11.h"
 #include "XCOMContainer.h"
 
 using namespace std;
-using namespace boost::geometry;
 using boost::lexical_cast;
 using boost::format;
 
@@ -61,7 +59,12 @@ void pngsave(const string &filename, const vector<uint8_t> bitmap, int width, in
 	image.write(filename);
 }
 
-typedef model::point<double, 3, cs::cartesian> point3d;
+typedef tuple<double, double, double> point3d;
+
+double d2r(double angle)
+{
+	return angle * M_PI / 180;
+}
 
 point3d rotateOverY(const point3d &point, double angle)
 {
@@ -114,8 +117,8 @@ int main(int /*argc*/, char **argv)
 				obj[xm][zm][ym] = 0x100;
 				//cout << format("point %1%,%2%,%3%") % xm % zm % ym << endl;
 				for (int f = 0; f < 8; f++) {
-					const point3d face = rotateOverY(current, yangle[f] * math::d2r);
-					const point3d dim = rotateOverX(face, 35.264 * math::d2r);
+					const point3d face = rotateOverY(current, d2r(yangle[f]));
+					const point3d dim = rotateOverX(face, d2r(35.264));
 					const int xp = get<0>(dim) + 16;
 					const int yp = get<1>(dim) * 200/240;	// аспект для VGA
 					//cout << format("facing %1% map to %2%,%3%") % f % xp % yp << endl;
@@ -155,17 +158,17 @@ void CUSTOM_ASSERT_POINT_EQUAL(const point3d &a, const point3d &b)
 UP_TEST(rotationOverYShouldCorrect)
 {
 	const point3d given(1, 0, 0);
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 45 * math::d2r), point3d(.707107, 0, .707107));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 90 * math::d2r), point3d(0, 0, 1));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 135 * math::d2r), point3d(-.707107, 0, .707107));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 180 * math::d2r), point3d(-1, 0, 0));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, 225 * math::d2r), point3d(-.707107, 0, -.707107));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, -90 * math::d2r), point3d(0, 0, -1));
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, -45 * math::d2r), point3d(.707107, 0, -.707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(45)), point3d(.707107, 0, .707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(90)), point3d(0, 0, 1));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(135)), point3d(-.707107, 0, .707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(180)), point3d(-1, 0, 0));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(225)), point3d(-.707107, 0, -.707107));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(-90)), point3d(0, 0, -1));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverY(given, d2r(-45)), point3d(.707107, 0, -.707107));
 }
 
 UP_TEST(rotationOverXShouldCorrect)
 {
 	const point3d given(0, 0, -1);
-	CUSTOM_ASSERT_POINT_EQUAL(rotateOverX(given, 35.264 * math::d2r), point3d(0, -.577345, -.816501));
+	CUSTOM_ASSERT_POINT_EQUAL(rotateOverX(given, d2r(35.264)), point3d(0, -.577345, -.816501));
 }
