@@ -80,6 +80,38 @@ point3d rotateOverX(const point3d &point, double angle)
 		       get<2>(point) * cos(angle) - get<1>(point) * sin(angle));
 }
 
+bool isVisiblePoint(const point3d &point, const vector<uint8_t> facings[8])
+{
+	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
+	for (int f = 0; f < 8; f++) {
+		const point3d face = rotateOverY(point, d2r(yangle[f]));
+		const point3d dim = rotateOverX(face, d2r(35.264));
+		const int xp = get<0>(dim) + 16;
+		const int yp = get<1>(dim) * 200/240;	// аспект для VGA
+		if (yp < 0 || yp > 47 || xp < 0 || xp > 32 || facings[f][(38 - yp) * 32 + xp] == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+vector<point3d> generatePoints(const vector<uint8_t> facings[8])
+{
+	vector<point3d> result;
+	for (double ym = 0.5; ym < 64; ym += 1) {
+		for (double xm = -15.5; xm < 16; xm += 1) {
+			for (double zm = -15.5; zm < 16; zm += 1) {
+				const point3d current(xm, ym, zm);
+				if (isVisiblePoint(current, facings)) {
+					//cout << format("point %1%,%2%,%3%") % xm % ym % zm << endl;
+					result.push_back(current);
+				}
+			}
+		}
+	}
+	return result;
+}
+
 int main(int /*argc*/, char **argv)
 {
 	// TODO: Нужно сделать нулевой verbosity level
@@ -106,38 +138,27 @@ int main(int /*argc*/, char **argv)
 //		cout << "facing size: " << f.size() << endl;
 //	}
 
-	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
-
-	int obj[32][32][64];
-
-	for (int xm = 0; xm < 32; xm++) {
-		for (int zm = 0; zm < 32; zm++) {
-			for (int ym = 0; ym < 64; ym++) {
-				const point3d current(xm - 16 + .5, ym + .5, zm - 16 + .5);
-				obj[xm][zm][ym] = 0x100;
-				//cout << format("point %1%,%2%,%3%") % xm % zm % ym << endl;
-				for (int f = 0; f < 8; f++) {
-					const point3d face = rotateOverY(current, d2r(yangle[f]));
-					const point3d dim = rotateOverX(face, d2r(35.264));
-					const int xp = get<0>(dim) + 16;
-					const int yp = get<1>(dim) * 200/240;	// аспект для VGA
-					//cout << format("facing %1% map to %2%,%3%") % f % xp % yp << endl;
-					if (yp < 0 || yp > 47 || xp < 0 || xp > 32 ||
-						facings[f][(38 - yp) * 32 + xp] == 0)
-					{
-						obj[xm][zm][ym] = 0;
-						break;
-					}
-				}
-			}
-		}
-	}
+	const vector<point3d> obj_points = generatePoints(facings);
 
 	for (int ym = 0; ym < 64; ym++) {
 		for (int xm = 0; xm < 32; xm++) {
 			cout << "> ";
 			for (int zm = 0; zm < 32; zm++) {
-				cout << (obj[xm][zm][ym] != 0 ? "[]" : "  ");
+				string point = "  ";
+				for (const auto p: obj_points) {
+					if (get<0>(p) < xm - 15.6 || get<0>(p) > xm - 15.4) {
+						continue;
+					}
+					if (get<1>(p) < ym + .4 || get<1>(p) > ym + .6) {
+						continue;
+					}
+					if (get<2>(p) < zm - 15.6 || get<2>(p) > zm - 15.4) {
+						continue;
+					}
+					point = "[]";
+					break;
+				}
+				cout << point;
 			}
 			cout << endl;
 		}
