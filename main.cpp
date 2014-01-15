@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <array>
+#include <iomanip>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <png++/png.hpp>
@@ -112,6 +113,46 @@ vector<point3d> generatePoints(const vector<uint8_t> facings[8])
 	return result;
 }
 
+vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, const vector<uint8_t> facings[8])
+{
+	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
+	vector<uint8_t> color(points.size(), 0);
+	for (int f = 0; f < 8; f++) {
+		// Вращаем сразу все на фейсинг
+		vector<point3d> rotated(points.size());
+		for (unsigned i = 0; i < points.size(); i++) {
+			const point3d face = rotateOverY(points[i], d2r(yangle[f]));
+			rotated[i] = rotateOverX(face, d2r(35.264));
+		}
+
+		// сортируем по квадратикам и расцвечиваем только верхние
+		for (int y = 0; y < 48; y++) {
+			for (int x = 0; x < 32; x++) {
+				int selected = -1;
+				double deep = numeric_limits<double>::max();
+				for (unsigned i = 0; i < rotated.size(); i++) {
+					const int xp = get<0>(rotated[i]) + 16;
+					const int yp = 38 - get<1>(rotated[i]) * 200/240;	// аспект для VGA
+					if (xp == x && yp == y && get<2>(rotated[i]) < deep) {
+						deep = get<2>(rotated[i]);
+						selected = i;
+					}
+				}
+
+				if (selected != -1) {
+					color[selected] = facings[f][y * 32 + x];
+				}
+			}
+		}
+	}
+
+	vector<pair<point3d, uint8_t>> result(points.size());
+	for (unsigned i = 0; i < points.size(); i++) {
+		result[i] = make_pair(points[i], color[i]);
+	}
+	return result;
+}
+
 int main(int /*argc*/, char **argv)
 {
 	// TODO: Нужно сделать нулевой verbosity level
@@ -140,12 +181,15 @@ int main(int /*argc*/, char **argv)
 
 	const vector<point3d> obj_points = generatePoints(facings);
 
+	const vector<pair<point3d, uint8_t>> obj_colored_points = coloredPoints(obj_points,facings);
+
 	for (int ym = 0; ym < 64; ym++) {
 		for (int xm = 0; xm < 32; xm++) {
 			cout << "> ";
 			for (int zm = 0; zm < 32; zm++) {
 				string point = "  ";
-				for (const auto p: obj_points) {
+				for (const auto cp: obj_colored_points) {
+					const auto p = get<0>(cp);
 					if (get<0>(p) < xm - 15.6 || get<0>(p) > xm - 15.4) {
 						continue;
 					}
@@ -155,7 +199,10 @@ int main(int /*argc*/, char **argv)
 					if (get<2>(p) < zm - 15.6 || get<2>(p) > zm - 15.4) {
 						continue;
 					}
-					point = "[]";
+
+					ostringstream ho;
+					ho << setfill('0') << setw(2) << hex << int(get<1>(cp));
+					point = ho.str();
 					break;
 				}
 				cout << point;
