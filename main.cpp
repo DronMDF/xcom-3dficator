@@ -146,9 +146,11 @@ vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, cons
 		}
 	}
 
-	vector<pair<point3d, uint8_t>> result(points.size());
+	vector<pair<point3d, uint8_t>> result;
 	for (unsigned i = 0; i < points.size(); i++) {
-		result[i] = make_pair(points[i], color[i]);
+		if (color[i] != 0) {
+			result.push_back(make_pair(points[i], color[i]));
+		}
 	}
 	return result;
 }
@@ -171,13 +173,6 @@ int main(int /*argc*/, char **argv)
 		container->getBitmap(lexical_cast<int>(argv[8])),
 		container->getBitmap(lexical_cast<int>(argv[9]))
 	};
-
-//	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
-//	int n = 0;
-//	for (auto f : facings) {
-//		pngsave(lexical_cast<string>(n++) + ".png", f, 32, 48, palette);
-//		cout << "facing size: " << f.size() << endl;
-//	}
 
 	const vector<point3d> obj_points = generatePoints(facings);
 
@@ -211,6 +206,20 @@ int main(int /*argc*/, char **argv)
 		}
 		cout << endl;
 	}
+
+
+	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
+	cout << "{ points: [" << endl;
+	for (const auto cp: obj_colored_points) {
+		cout << "{ ";
+		cout << format("coord: {x: %1%, y: %2%, z: %3%}")
+			% get<0>(cp.first) % get<1>(cp.first) % get<2>(cp.first);
+		cout << ", ";
+		cout << format("color: {r: %1%, g: %2%, b: %3%}")
+			% (palette[cp.second][0] / 256.) % (palette[cp.second][1] / 256.) % (palette[cp.second][2] / 256.);
+		cout << "}," << endl;
+	}
+	cout << "]}" << endl;
 
 	return 0;
 }
