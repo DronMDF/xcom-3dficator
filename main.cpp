@@ -4,7 +4,6 @@
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
-#include <boost/filesystem.hpp>
 #include <png++/png.hpp>
 #include "upp11.h"
 #include "XCOMContainer.h"
@@ -12,7 +11,6 @@
 using namespace std;
 using boost::lexical_cast;
 using boost::format;
-using boost::filesystem::basename;
 
 // Вызываться будет примерно так:
 // xcom-3dficator -w32 -h48 UNITS/XCOM_0 32 33 34 35 36 37 38 39 > unarmored-male-head-torso.json
@@ -157,23 +155,30 @@ vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, cons
 	return result;
 }
 
-int main(int /*argc*/, char **argv)
+int main(int argc, char **argv)
 {
 	// TODO: Нужно сделать нулевой verbosity level
 	if (!UP_RUN()) {
 		return -1;
 	}
 
-	const auto container = XCOMContainer::create(argv[1], 32, 48);
+	string varname;
+	while (true) {
+		int opt = getopt(argc, argv, "v:");
+		if (opt == -1) { break; }
+		if (opt == 'v') { varname = optarg; }
+	};
+
+	const auto container = XCOMContainer::create(argv[optind], 32, 48);
 	const vector<uint8_t> facings[8] = {
-		container->getBitmap(lexical_cast<int>(argv[2])),
-		container->getBitmap(lexical_cast<int>(argv[3])),
-		container->getBitmap(lexical_cast<int>(argv[4])),
-		container->getBitmap(lexical_cast<int>(argv[5])),
-		container->getBitmap(lexical_cast<int>(argv[6])),
-		container->getBitmap(lexical_cast<int>(argv[7])),
-		container->getBitmap(lexical_cast<int>(argv[8])),
-		container->getBitmap(lexical_cast<int>(argv[9]))
+		container->getBitmap(lexical_cast<int>(argv[optind + 1])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 2])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 3])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 4])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 5])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 6])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 7])),
+		container->getBitmap(lexical_cast<int>(argv[optind + 8]))
 	};
 
 	const vector<point3d> obj_points = generatePoints(facings);
@@ -211,7 +216,7 @@ int main(int /*argc*/, char **argv)
 
 
 	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
-	cout << basename(argv[1]) << " = {" << endl;
+	cout << "var " << varname << " = {" << endl;
 	cout << "\tpoints: [ ";
 	for (const auto cp: obj_colored_points) {
 		cout << format("%1%, %2%, %3%, ") % get<0>(cp.first) % get<1>(cp.first) % get<2>(cp.first);
@@ -222,7 +227,9 @@ int main(int /*argc*/, char **argv)
 		const auto color = palette[cp.second];
 		cout << format("%1%, %2%, %3%, ") % (color[0] / 256.) % (color[1] / 256.) % (color[2] / 256.);
 	}
-	cout << "]," << endl << "\tpoints_count: " << obj_colored_points.size() << endl << "}" << endl;
+	cout << "]," << endl;
+	cout << "\tpoints_count: " << obj_colored_points.size() << endl;
+	cout << "};" << endl;
 	return 0;
 }
 
