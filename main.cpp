@@ -185,37 +185,8 @@ int main(int argc, char **argv)
 
 	const vector<pair<point3d, uint8_t>> obj_colored_points = coloredPoints(obj_points,facings);
 
-	for (int ym = 0; ym < 64; ym++) {
-		for (int xm = 0; xm < 32; xm++) {
-			cout << "> ";
-			for (int zm = 0; zm < 32; zm++) {
-				string point = "  ";
-				for (const auto cp: obj_colored_points) {
-					const auto p = get<0>(cp);
-					if (get<0>(p) < xm - 15.6 || get<0>(p) > xm - 15.4) {
-						continue;
-					}
-					if (get<1>(p) < ym + .4 || get<1>(p) > ym + .6) {
-						continue;
-					}
-					if (get<2>(p) < zm - 15.6 || get<2>(p) > zm - 15.4) {
-						continue;
-					}
-
-					ostringstream ho;
-					ho << setfill('0') << setw(2) << hex << int(get<1>(cp));
-					point = ho.str();
-					break;
-				}
-				cout << point;
-			}
-			cout << endl;
-		}
-		cout << endl;
-	}
-
-
 	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
+
 	cout << "var " << varname << " = {" << endl;
 	cout << "\tpoints: [ ";
 	for (const auto cp: obj_colored_points) {
