@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
 #include <png++/png.hpp>
 #include "upp11.h"
 #include "XCOMContainer.h"
@@ -11,6 +12,7 @@
 using namespace std;
 using boost::lexical_cast;
 using boost::format;
+using boost::filesystem::basename;
 
 // Вызываться будет примерно так:
 // xcom-3dficator -w32 -h48 UNITS/XCOM_0 32 33 34 35 36 37 38 39 > unarmored-male-head-torso.json
@@ -209,18 +211,18 @@ int main(int /*argc*/, char **argv)
 
 
 	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
-	cout << "{ points: [" << endl;
+	cout << basename(argv[1]) << " = {" << endl;
+	cout << "\tpoints: [ ";
 	for (const auto cp: obj_colored_points) {
-		cout << "{ ";
-		cout << format("coord: {x: %1%, y: %2%, z: %3%}")
-			% get<0>(cp.first) % get<1>(cp.first) % get<2>(cp.first);
-		cout << ", ";
-		cout << format("color: {r: %1%, g: %2%, b: %3%}")
-			% (palette[cp.second][0] / 256.) % (palette[cp.second][1] / 256.) % (palette[cp.second][2] / 256.);
-		cout << "}," << endl;
+		cout << format("%1%, %2%, %3%, ") % get<0>(cp.first) % get<1>(cp.first) % get<2>(cp.first);
 	}
-	cout << "]}" << endl;
-
+	cout << "]," << endl;
+	cout << "\tcolors: [ ";
+	for (const auto cp: obj_colored_points) {
+		const auto color = palette[cp.second];
+		cout << format("%1%, %2%, %3%, ") % (color[0] / 256.) % (color[1] / 256.) % (color[2] / 256.);
+	}
+	cout << "]," << endl << "\tpoints_count: " << obj_colored_points.size() << endl << "}" << endl;
 	return 0;
 }
 
