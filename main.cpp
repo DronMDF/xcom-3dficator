@@ -2,6 +2,7 @@
 #include <iostream>
 #include <array>
 #include <iomanip>
+#include <functional>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <png++/png.hpp>
@@ -128,19 +129,20 @@ vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, cons
 		// сортируем по квадратикам и расцвечиваем только верхние
 		for (int y = 0; y < 48; y++) {
 			for (int x = 0; x < 32; x++) {
-				int selected = -1;
-				double deep = numeric_limits<double>::max();
+
+				vector<pair<double, int>> deeps;
 				for (unsigned i = 0; i < rotated.size(); i++) {
 					const int xp = get<0>(rotated[i]) + 16;
 					const int yp = 38 - get<1>(rotated[i]) * 200/240;	// аспект для VGA
-					if (xp == x && yp == y && get<2>(rotated[i]) < deep) {
-						deep = get<2>(rotated[i]);
-						selected = i;
+					if (xp == x && yp == y) {
+						deeps.push_back(make_pair(get<2>(rotated[i]), i));
 					}
 				}
 
-				if (selected != -1) {
-					color[selected] = facings[f][y * 32 + x];
+				sort(deeps.begin(), deeps.end());
+				for (unsigned i = 0; i < min(deeps.size(), 2U); i++) {
+					// одну или две точки маркируем
+					color[deeps[i].second] = facings[f][y * 32 + x];
 				}
 			}
 		}
