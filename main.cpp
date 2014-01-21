@@ -100,9 +100,9 @@ bool isVisiblePoint(const point3d &point, const vector<uint8_t> facings[8])
 vector<point3d> generatePoints(const vector<uint8_t> facings[8])
 {
 	vector<point3d> result;
-	for (double ym = 0.5; ym < 64; ym += 1) {
-		for (double xm = -15.5; xm < 16; xm += 1) {
-			for (double zm = -15.5; zm < 16; zm += 1) {
+	for (double ym = 0.25; ym < 64; ym += .5) {
+		for (double xm = -15.75; xm < 16; xm += .5) {
+			for (double zm = -15.75; zm < 16; zm += .5) {
 				const point3d current(xm, ym, zm);
 				if (isVisiblePoint(current, facings)) {
 					//cout << format("point %1%,%2%,%3%") % xm % ym % zm << endl;
@@ -140,8 +140,8 @@ vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, cons
 				}
 
 				sort(deeps.begin(), deeps.end());
-				for (unsigned i = 0; i < min(deeps.size(), 2U); i++) {
-					// одну или две точки маркируем
+				for (unsigned i = 0; i < min(deeps.size(), 5U); i++) {
+					// одну-пять точки маркируем
 					color[deeps[i].second] = facings[f][y * 32 + x];
 				}
 			}
