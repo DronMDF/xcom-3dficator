@@ -86,9 +86,19 @@ vector<point3d> generatePoints(double point_distance)
 {
 	vector<point3d> result;
 	for (double ym = 0 + point_distance / 2; ym < 64; ym += point_distance) {
-		for (double xm = -16 + point_distance / 2; xm < 16; xm += point_distance) {
-			for (double zm = -16 + point_distance / 2; zm < 16; zm += point_distance) {
-				result.push_back(point3d(xm, ym, zm));
+		// Кватратный алгоритм - точки соответствуют прямоугольному блоку 32х32
+//		for (double xm = -16 + point_distance / 2; xm < 16; xm += point_distance) {
+//			for (double zm = -16 + point_distance / 2; zm < 16; zm += point_distance) {
+//				result.push_back(point3d(xm, ym, zm));
+//			}
+//		}
+		// Круглый алгоритм, точки располагаютися по окружности вокруг оси y.
+		for (double r = point_distance / 2; r < 16; r += point_distance) {
+			double length = 2 * M_PI * r;
+			int count = length / point_distance;
+			double angle = 2 * M_PI / count;
+			for (double a = 0 + point_distance / 2; a < 2 * M_PI; a += angle) {
+				result.push_back(rotateOverY(point3d(r, ym, 0), a));
 			}
 		}
 	}
