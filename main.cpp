@@ -125,7 +125,7 @@ vector<pair<point3d, uint8_t>> coloredPoints(const vector<point3d> &points, cons
 {
 	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
 	vector<uint8_t> color(points.size(), 0);
-	for (int f = 0; f < 8; f++) {
+	for (int f: {7, 0, 6, 1, 5, 2, 4, 3}) {
 		// Вращаем сразу все на фейсинг
 		vector<point3d> rotated(points.size());
 		for (unsigned i = 0; i < points.size(); i++) {
