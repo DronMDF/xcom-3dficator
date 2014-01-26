@@ -82,6 +82,19 @@ point3d rotateOverX(const point3d &point, double angle)
 		       get<2>(point) * cos(angle) - get<1>(point) * sin(angle));
 }
 
+vector<point3d> generatePoints(double point_distance)
+{
+	vector<point3d> result;
+	for (double ym = 0 + point_distance / 2; ym < 64; ym += point_distance) {
+		for (double xm = -16 + point_distance / 2; xm < 16; xm += point_distance) {
+			for (double zm = -16 + point_distance / 2; zm < 16; zm += point_distance) {
+				result.push_back(point3d(xm, ym, zm));
+			}
+		}
+	}
+	return result;
+}
+
 bool isVisiblePoint(const point3d &point, const vector<uint8_t> facings[8])
 {
 	const int yangle[8] = { 135, 90, 45, 0, -45, -90, -135, -180 };
@@ -97,18 +110,12 @@ bool isVisiblePoint(const point3d &point, const vector<uint8_t> facings[8])
 	return true;
 }
 
-vector<point3d> generatePoints(const vector<uint8_t> facings[8])
+vector<point3d> filterVisiblePoints(const vector<point3d> &points, const vector<uint8_t> facings[8])
 {
 	vector<point3d> result;
-	for (double ym = 0.25; ym < 64; ym += .5) {
-		for (double xm = -15.75; xm < 16; xm += .5) {
-			for (double zm = -15.75; zm < 16; zm += .5) {
-				const point3d current(xm, ym, zm);
-				if (isVisiblePoint(current, facings)) {
-					//cout << format("point %1%,%2%,%3%") % xm % ym % zm << endl;
-					result.push_back(current);
-				}
-			}
+	for (const auto &point: points) {
+		if (isVisiblePoint(point, facings)) {
+			result.push_back(point);
 		}
 	}
 	return result;
@@ -183,8 +190,8 @@ int main(int argc, char **argv)
 		container->getBitmap(lexical_cast<int>(argv[optind + 8]))
 	};
 
-	const vector<point3d> obj_points = generatePoints(facings);
-
+	const vector<point3d> all_points = generatePoints(0.5);
+	const vector<point3d> obj_points = filterVisiblePoints(all_points, facings);
 	const vector<pair<point3d, uint8_t>> obj_colored_points = coloredPoints(obj_points,facings);
 
 	const auto palette = loadPalette("GEODATA/PALETTES.DAT", 774, 256);
